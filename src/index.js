@@ -14,11 +14,30 @@
 // import { DB_NAME } from "./constants";
 import dotenv from "dotenv";
 import connectDB from "./db/dbConnect.js";
+import app from "./app.js";
 
 dotenv.config({
   path: "./env",
 });
-connectDB();
+
+// as this is a async function it returns a promice
+// and as its a promice we can use then-catch
+connectDB()
+  .then(() => {
+    // this is a precheck
+    app.on("error", (error) => {
+      console.log("ERROR: ", error);
+      throw error;
+    });
+
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(`app listening on port-> ${process.env.PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("MONGO DB Failed to connect in index.js: ", error);
+    process.exit(1);
+  });
 
 //--------------------first approch------------------------
 /*
