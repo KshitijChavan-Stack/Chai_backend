@@ -1,8 +1,26 @@
+//A function that takes another function as a parameter
+//Returns a new function
 const asyncHandler = (requestHandler) => {
+  //First arrow function:
+  //Takes requestHandler (your async function)
   (req, res, next) => {
+    //Express Middleware Pattern
+    //Second arrow function: Returns a new Express
+    //middleware function with (req, res, next) parameters
     Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
+    //Wraps the result in a Promise (even if it's not already a promise)
+    // Ensures consistent Promise handling
   };
 };
+/**
+ how it works:
+ No try-catch needed!
+ app.get('/user', asyncHandler(async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    res.json(user);
+    // If any error occurs, asyncHandler catches it automatically
+  }));
+ */
 
 export { asyncHandler };
 

@@ -5,6 +5,7 @@ import { DB_NAME } from "../constants.js";
 1.Database hamesha another continent me hota hai isiliye async await lagan hota hai
 2. database se baat karte samay error aa sakti hai isiliye try catch lagana jarurri hai
 */
+// this is a async function so it returns a promice
 const connectDB = async () => {
   try {
     const connectionInstance = await mongoose.connect(
