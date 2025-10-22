@@ -14,7 +14,7 @@ app.use(
 );
 // ----------MAJOR CONFIG---------------
 // we can configure that we accept the json and we
-// aslo have some options to configure
+// also have some options to configure
 app.use(expess.json({ limit: "16kb" })); // this will parse the incoming req with json payload
 app.use(expess.urlencoded({ extended: true, limit: "16kb" })); // this will parse the incoming req with urlencoded payload
 // extended -> you give objects inside objects
