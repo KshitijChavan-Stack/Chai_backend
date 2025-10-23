@@ -34,7 +34,7 @@ const videoSchema = new Schema(
     },
     owner: {
       type: Schema.Types.ObjectId,
-      ref: "User", // MODEL WHOULD BE AVAILABLE
+      ref: "User", // MODEL SHOULD BE AVAILABLE
     },
   },
   { timestamps: true }

@@ -1,6 +1,9 @@
+//This is a Mongoose User Model with authentication
+//features including password hashing, jwt token generation,
+//and video watch history tracking.
 import mongoose, { Schema, model } from "mongoose";
 // destructuering the Schema from mongoose
-import { Jwt } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 // jwt is a bearer token
 // who ever has the token can access the data
 import bcrypt from "bcrypt";
@@ -56,23 +59,33 @@ const userSchema = new Schema(
 );
 
 userSchema.pre("save", async function (next) {
+  //NOT arrow function because we need this keyword
   if (!this.isModified("password")) return next();
+  //Prevents re-hashing on every save (like updating email)
+  //this refers to the document being saved
 
   this.password = await bcrypt.hash(this.password, 10);
+  //10: Salt rounds (higher = more secure but slower)
   next();
+  //Tells Mongoose to continue with save operation
+  // Without this, save would hang forever
 });
 
+//Instance Methods
 userSchema.methods.isPasswordCorrect = async function (password) {
   // password -> plain text password
   // this.password -> hashed password
   return await bcrypt.compare(password, this.password);
+  //bcrypt.compare(): Checks if plain password matches hash
   // returns true or false
 };
 
 userSchema.methods.generateAccessToken = function () {
   // this process won't take long time
-  return Jwt.sign(
+  return jwt.sign(
+    //Three parts: Header.Payload.Signature
     {
+      //Data to encode in token
       //payload
       // key : value coming from DB
       _id: this._id,
@@ -80,6 +93,7 @@ userSchema.methods.generateAccessToken = function () {
       username: this.username,
       fullName: this.fullName,
     },
+    //Used to verify token authenticity
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
@@ -88,7 +102,7 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
-  return Jwt.sign(
+  return jwt.sign(
     {
       // bcoz the referesh token is refereshed
       // again and again we don't need much info
