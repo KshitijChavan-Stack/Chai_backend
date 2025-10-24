@@ -1,9 +1,11 @@
 //A function that takes another function as a parameter
 //Returns a new function
+// bcoz of this we dont need to put everything
+// again and again in try catch block or in promise .catch
 const asyncHandler = (requestHandler) => {
   //First arrow function:
   //Takes requestHandler (your async function)
-  (req, res, next) => {
+  return (req, res, next) => {
     //Express Middleware Pattern
     //Second arrow function: Returns a new Express
     //middleware function with (req, res, next) parameters

@@ -58,6 +58,7 @@ const userSchema = new Schema(
   // createdAt, updatedAt
 );
 
+// hook - pre-save middleware
 userSchema.pre("save", async function (next) {
   //NOT arrow function because we need this keyword
   if (!this.isModified("password")) return next();
