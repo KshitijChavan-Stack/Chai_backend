@@ -65,6 +65,7 @@ userSchema.pre("save", async function (next) {
   //Prevents re-hashing on every save (like updating email)
   //this refers to the document being saved
 
+  // this takes time so we make it async-await
   this.password = await bcrypt.hash(this.password, 10);
   //10: Salt rounds (higher = more secure but slower)
   next();

@@ -31,5 +31,6 @@ import userRoutes from "./routes/user.routes.js";
 // http://localhost:5000/api/v1/user/register
 // http://localhost:5000/api/v1/user/login
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/register", userRoutes);
 
 export default app;
