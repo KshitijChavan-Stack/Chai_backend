@@ -1,5 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { apiError } from "../utils/apiError.js";
+import apiError from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
@@ -16,7 +16,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // check for user creation
   // return response
 
-  const { fullName, email, username } = req.body;
+  const { fullName, email, username, password } = req.body;
   console.log(`Email : ${email}`); // just checking
 
   // i thought if just need to iterate over the array why can't
@@ -24,7 +24,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // and as it not return anything the condition cannot be checked
   if (
     // multiple fields check
-    [fullName, email, username].some((element) => {
+    [fullName, email, username, password].some((element) => {
       return !element?.trim(); // if anyone is empty this will return false and the
       // condition will not be satisfied
     })
@@ -40,7 +40,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //documents matching at least one condition in the array
 
   if (existedUser) {
-    throw new apiError(409, "User already registered with us");
+    throw new apiError("User already registered with us", 409);
   }
 
   // we might have the files access or might not have
@@ -70,7 +70,7 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageCloudinaryRes = await uploadOnCloudinary(coverImageLocalPath);
   }
 
-  const user = User.create({
+  const user = await User.create({
     fullName,
     avatar: avatarCloudinaryRes.url,
     // we have checked the avatar but in case of

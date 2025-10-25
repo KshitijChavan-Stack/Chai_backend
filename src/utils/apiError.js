@@ -11,7 +11,7 @@ class apiError extends Error {
     errors = [],
     stack = ""
   ) {
-    this.super(message);
+    super(message);
     this.statusCode = statusCode;
     this.data = null;
     this.message = message;
@@ -29,4 +29,4 @@ class apiError extends Error {
   }
 }
 
-export { apiError };
+export default apiError;
