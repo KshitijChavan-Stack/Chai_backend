@@ -17,7 +17,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // return response
 
   const { fullName, email, username } = req.body;
-  console.log(`Email : ${email}`);
+  console.log(`Email : ${email}`); // just checking
 
   // i thought if just need to iterate over the array why can't
   // we use forEach directly  but it doesn't return anything
@@ -25,15 +25,19 @@ const registerUser = asyncHandler(async (req, res) => {
   if (
     // multiple fields check
     [fullName, email, username].some((element) => {
-      return !element?.trim();
+      return !element?.trim(); // if anyone is empty this will return false and the
+      // condition will not be satisfied
     })
   ) {
     throw new apiError(400, "All fields are required");
   }
-
-  const existedUser = User.findOne({
+  // this return .findOne() returns a promise
+  // need to be awaited
+  const existedUser = await User.findOne({
     $or: [{ email }, { username }],
   });
+  //$or - MongoDB logical operator that returns
+  //documents matching at least one condition in the array
 
   if (existedUser) {
     throw new apiError(409, "User already registered with us");
@@ -45,6 +49,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // but we need to upload these images to cloudinary
   const avatarLocalPath = req.files?.avatar[0]?.path;
+  // Returns undefined if any step fails (safe)
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
   // we also need to check if the avatar and cover image is present or not and send by user
 
@@ -54,10 +59,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // upload to cloudinary
   const avatarCloudinaryRes = await uploadOnCloudinary(avatarLocalPath);
-  const coverImageCloudinaryRes = await uploadOnCloudinary(coverImageLocalPath);
+
   // this will return us a complete response from cloudinary
   if (!avatarCloudinaryRes) {
     throw new apiError(500, "Error in uploading avatar image");
+  }
+  // Only upload cover image if path exists
+  let coverImageCloudinaryRes = null;
+  if (coverImageLocalPath) {
+    coverImageCloudinaryRes = await uploadOnCloudinary(coverImageLocalPath);
   }
 
   const user = User.create({
@@ -79,7 +89,7 @@ const registerUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  /// this is the one that checks in th eone thats just created
+  /// this is the one that checks in the one thats just created
   if (!checkUser) {
     throw new apiError(
       500,
