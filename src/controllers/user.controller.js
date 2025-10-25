@@ -47,10 +47,25 @@ const registerUser = asyncHandler(async (req, res) => {
   // so we do optional chaining
   // this local paths can be come or maynot its not confirmed
 
+  // ---------WE NEED TO STUDY THIS ONE----------
+  // console.log(req.files);
+
   // but we need to upload these images to cloudinary
   const avatarLocalPath = req.files?.avatar[0]?.path;
   // Returns undefined if any step fails (safe)
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  // this is done just becoz when we user dont send the
+  // cover image it goes undifined and then a error
+  // arise-> cannot read properties of undefined
+  let coverImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files?.coverImage[0]?.path;
+  }
+
   // we also need to check if the avatar and cover image is present or not and send by user
 
   if (!avatarLocalPath) {
@@ -70,6 +85,11 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageCloudinaryRes = await uploadOnCloudinary(coverImageLocalPath);
   }
 
+  // this is one of the minor bug resolved
+  // while creating thr user we're contacting with db and
+  // this can take time thats why in our case we were getting a error
+  // "something went wrong" -> but the user was getting created and saved in atlas
+  // so we just added the await keyword so things work asper required
   const user = await User.create({
     fullName,
     avatar: avatarCloudinaryRes.url,
