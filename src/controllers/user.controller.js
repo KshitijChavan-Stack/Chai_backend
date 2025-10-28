@@ -205,4 +205,34 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser };
+const logoutUse = asyncHandler(async (req, res) => {
+  //just bcoz we are not able to logout so we created a middleware
+  // which can give use the user._id
+  // first need to clear the cookies
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+      // when we get a return value we
+      // get new updated value
+    }
+  );
+  const options = {
+    // this both tells only server can modify it
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new apiResponse(200, {}, "User Logged out Done"));
+});
+
+export { registerUser, loginUser, logoutUse };
