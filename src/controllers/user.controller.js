@@ -4,6 +4,24 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 
+const generateAccessAndRefreshTokens = async (userid) => {
+  try {
+    const user = await User.findById(userid);
+    const accessToken = user.generateAccessToken();
+    const refershToken = user.generateRefreshToken();
+
+    user.refershToken = refershToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refershToken };
+  } catch (error) {
+    throw new apiError(
+      500,
+      "Something went wrong while generating access and referesh token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   // ----------------logic to register the user---------------
   // get the data from the req object
@@ -122,4 +140,69 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, checkUser, "user registered success"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  //Steps we need to follow
+  // 1. get the userdata to validate
+  // 2.verify the user sends all the fields are filled
+  // 3.make a final check if user exist or not if not send him to registration page
+  // 4.if exist give him a access token and refresh token and give the access
+  // 5.send cookie
+  const { username, password, email } = req.body;
+
+  if (!username || !email) {
+    throw new apiError(400, "Username or email is required");
+  }
+
+  console.log(`UserName : ${username}`); // just checking
+
+  const userexist = await User.findOne({
+    // $or is a mongoDb operator
+    $or: [{ username }, { email }],
+  });
+
+  if (!userexist) {
+    throw new apiError(404, "User not found or maybe does not exist");
+  }
+
+  const passwordCheck = await userexist.isPasswordCorrect(password);
+  if (!passwordCheck) {
+    throw new apiError(401, "Password is incorrect , invalid crediancials!");
+  }
+  // might take time
+  const { accessToken, refershToken } = await generateAccessAndRefreshTokens(
+    userexist._id
+  );
+
+  const loggedInUser = User.findById(userexist._id).select(
+    "-password =refreshToken"
+  );
+
+  // this is just a object
+  const options = {
+    // this both tells only server can modify it
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refershToken, options)
+    .json(
+      new apiResponse(
+        200,
+        {
+          // this is -> data
+          // we are handling this case as when user want to
+          // save access and refersh token from his side(localstorage)
+          user: loggedInUser,
+          accessToken,
+          refershToken,
+        },
+        // message
+        "User logged In success"
+      )
+    );
+});
+
+export { registerUser, loginUser };
