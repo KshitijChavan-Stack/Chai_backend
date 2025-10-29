@@ -1,3 +1,5 @@
+// This middleware is a standard authentication pattern used in production Node.js applications with JWT!
+// It's the gatekeeper that protects your routes from unauthorized access.
 import { User } from "../models/user.model";
 import apiError from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -7,27 +9,36 @@ import jwt from "jsonwebtoken";
 // so we just make it as underscore
 export const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
-    const token =
+    const token = //Returns undefined if cookies doesn't exist
       req.cookies?.accessToken ||
-      req.header("Authorization")?.replace("Bearer", "");
+      // this is For mobile apps, Postman, or API clients
+      req.header("Authorization")?.replace("Bearer ", "");
+    // .replace("Bearer", ""): Removes "Bearer " prefix
 
     if (!token) {
-      throw new apiError(401, "Unauth request !");
+      throw new apiError(
+        401,
+        "Authentication required but missing/invalid request !"
+      );
     }
 
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
     // we have decodedToken from model we have ._id
+    // decodedToken?._id ->Safe access (though jwt.verify already threw error if invalid)
     const user = await User.findById(decodedToken?._id).select(
-      "-password ,-refreshToken"
+      "-password -refreshToken"
     );
 
     if (!user) {
-      // TODE : discuss about frontend
+      // TODO : discuss about frontend
       throw new apiError(401, "Invalid access Token");
     }
     // adding user
+    // Adds custom property to req object
     req.user = user;
+
+    // I'm done, move to next middleware/route
     next(); // we write this bcoz to tell after this is done,
     // run the next method
   } catch (error) {
