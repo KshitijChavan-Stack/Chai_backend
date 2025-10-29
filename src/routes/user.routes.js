@@ -14,7 +14,10 @@ const router = Router();
 // which ever method is getting executed just before that
 // inject it in
 router.route("/register").post(
+  //"Injecting" = Adding middleware before route handler
+  //Order matters: upload runs first, then registerUser
   upload.fields([
+    //upload.fields(): Accepts multiple different file fields
     {
       name: "avatar",
       maxCount: 1,
