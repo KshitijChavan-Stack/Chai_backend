@@ -1,8 +1,8 @@
 // This middleware is a standard authentication pattern used in production Node.js applications with JWT!
 // It's the gatekeeper that protects your routes from unauthorized access.
-import { User } from "../models/user.model";
-import apiError from "../utils/apiError";
-import { asyncHandler } from "../utils/asyncHandler";
+import { User } from "../models/user.model.js";
+import apiError from "../utils/apiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 
 // sometime we see we dont use res object

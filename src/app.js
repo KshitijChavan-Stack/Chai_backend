@@ -32,6 +32,7 @@ import userRoutes from "./routes/user.routes.js";
 // http://localhost:5000/api/v1/user/login
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/register", userRoutes);
+app.use("/api/v1/login", userRoutes);
 app.use((err, req, res, next) => {
   res.status(err.statusCode || 500).json({
     success: false,

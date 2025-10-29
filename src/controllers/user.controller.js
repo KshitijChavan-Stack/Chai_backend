@@ -8,16 +8,16 @@ const generateAccessAndRefreshTokens = async (userid) => {
   try {
     const user = await User.findById(userid);
     const accessToken = user.generateAccessToken();
-    const refershToken = user.generateRefreshToken();
+    const refreshToken = user.generateRefreshToken();
 
-    user.refershToken = refershToken;
+    user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refershToken };
+    return { accessToken, refreshToken };
   } catch (error) {
     throw new apiError(
       500,
-      "Something went wrong while generating access and referesh token"
+      "Something went wrong while generating access and refreshToken token"
     );
   }
 };
@@ -29,7 +29,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // CHECK FOR IMAGES ,CHECK FOR AVATAR
   // UPLOAD TO CLOUDINARY IF PRESENT-> UPLOADOnCLOUDINARY.JS
   // create user object ->  create entry in DB
-  // remove passowrd and referesh token field from the response
+  // remove passowrd and refreshToken token field from the response
   // as when we create a user we get the complete user object in return so we don't want to send it complete
   // check for user creation
   // return response
@@ -148,8 +148,10 @@ const loginUser = asyncHandler(async (req, res) => {
   // 4.if exist give him a access token and refresh token and give the access
   // 5.send cookie
   const { username, password, email } = req.body;
+  console.log(email);
 
-  if (!username || !email) {
+  // a little logic change wrap it and then give a exclamatory
+  if (!(username || email)) {
     throw new apiError(400, "Username or email is required");
   }
 
@@ -169,13 +171,14 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new apiError(401, "Password is incorrect , invalid crediancials!");
   }
   // might take time
-  const { accessToken, refershToken } = await generateAccessAndRefreshTokens(
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     userexist._id
   );
 
   const loggedInUser = User.findById(userexist._id).select(
-    "-password =refreshToken"
+    "-password -refreshToken"
   );
+  console.log("Sending response-----");
 
   // this is just a object
   const options = {
@@ -187,7 +190,7 @@ const loginUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refershToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new apiResponse(
         200,
@@ -197,7 +200,7 @@ const loginUser = asyncHandler(async (req, res) => {
           // save access and refersh token from his side(localstorage)
           user: loggedInUser,
           accessToken,
-          refershToken,
+          refreshToken,
         },
         // message
         "User logged In success"
