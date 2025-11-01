@@ -174,8 +174,14 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     userexist._id
   );
-
-  const loggedInUser = User.findById(userexist._id).select(
+  /*
+  Why This Causes Circular Reference Error:
+  Without await, loggedInUser is a Mongoose Query object
+  (not the actual user data), which contains circular references.
+  When you try to convert it to JSON in the response, 
+  it fails with "Converting circular structure to JSON".
+  */
+  const loggedInUser = await User.findById(userexist._id).select(
     "-password -refreshToken"
   );
   console.log("Sending response-----");
