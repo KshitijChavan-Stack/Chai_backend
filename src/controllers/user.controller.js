@@ -302,4 +302,130 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUse, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  // can also be added
+  // if (newPassword !== confirmPassword) {
+  //   throw new apiError("confirm password should be same !", 401)
+  // }
+
+  const user = await User.findById(req.user._id);
+
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new apiError("oldPassword verification failed", 400);
+  }
+
+  user.password = newPassword;
+  // This is a database operation
+  await User.save({ validateBeforeSave: false }); //pre hooked will be called
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, {}, "Password Changed Success !"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new apiResponse(200, req.user, "Current user fetched successfully"));
+});
+
+// text based data updated
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  // we can take whatever we want here
+  const { fullName, email } = req.body;
+
+  if (!fullName || !email) {
+    throw new apiError("all field should be provided", 400);
+  }
+
+  // bcoz we have multiple things to update so we use
+  // this method
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        // we can do both ways
+        fullName,
+        email: email,
+      },
+    },
+    { new: true } // after the updatation the information is returned!!
+  ).select("-password");
+
+  // user.findById(user._id).select("-password")
+
+  res.status(200).json(new apiResponse(200, user, "Account details updated"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  // we just want one file so we write .file
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new apiError("Avatar file missing", 400);
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar) {
+    throw new apiError("Error while uploding to cloudinary avatar ");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      // we just need to update one
+      $set: {
+        avatar: avatar.url, // only avatar will be the complete object
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  res
+    .status(200)
+    .json(new apiResponse(200, user, "Cover image update success"));
+});
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  // we just want one file so we write .file
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) {
+    throw new apiError("CoverImage file missing", 400);
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage.url) {
+    throw new apiError("Error while uploding to cloudinary CoverImage ");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      // we just need to update one
+      $set: {
+        coverImage: coverImage.url, // only CoverImage will be the complete object
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  res.status(200).json(new apiResponse(200, user, "avatar update success"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUse,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+};
