@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
+import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
 const generateAccessAndRefreshTokens = async (userid) => {
   try {
@@ -362,33 +363,54 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  // we just want one file so we write .file
+  // Get the new avatar file path
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
     throw new apiError("Avatar file missing", 400);
   }
 
+  // Get the old avatar URL before updating
+  const user = await User.findById(req.user?._id);
+
+  if (!user) {
+    throw new apiError("User not found", 404);
+  }
+
+  const oldAvatarUrl = user.avatar;
+
+  // Upload new avatar to Cloudinary
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
   if (!avatar) {
-    throw new apiError("Error while uploding to cloudinary avatar ");
+    throw new apiError("Error while uploading to cloudinary avatar");
   }
 
-  const user = await User.findByIdAndUpdate(
+  // Update user with new avatar
+  const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
-      // we just need to update one
       $set: {
-        avatar: avatar.url, // only avatar will be the complete object
+        avatar: avatar.url,
       },
     },
     { new: true }
   ).select("-password");
 
+  // Delete old avatar from Cloudinary (if it exists)
+  if (oldAvatarUrl) {
+    // Extract public_id from the Cloudinary URL
+    //  split('/') - Split by slashes: ['https:', '', 'res.cloudinary.com', ..., 'abc123def.jpg']
+    // .pop() - Get last element: 'abc123def.jpg'
+    // .split('.')[0] - Remove extension: 'abc123def'
+    const publicId = oldAvatarUrl.split("/").pop().split(".")[0];
+    // ex -> https://res.cloudinary.com/demo/image/upload/v1234567890/abc123def.jpg
+    await deleteFromCloudinary(publicId);
+  }
+
   res
     .status(200)
-    .json(new apiResponse(200, user, "Cover image update success"));
+    .json(new apiResponse(200, updatedUser, "Avatar updated successfully"));
 });
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   // we just want one file so we write .file
