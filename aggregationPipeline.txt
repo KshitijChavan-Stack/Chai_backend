@@ -1,0 +1,5 @@
+-> pipleine is nothing but stages like 1-2-3
+-> each stage have a operation and after that the res is only delivered to the next stage
+-> use is simple just use a keyword .aggregate with the db object 
+-> this takes a array [{object},{object} ]
+-> every object is a stage in the array
