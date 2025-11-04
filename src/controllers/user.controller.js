@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
+import { Subscription } from "../models/subscription.model.js";
 
 const generateAccessAndRefreshTokens = async (userid) => {
   try {
@@ -440,6 +441,88 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   res.status(200).json(new apiResponse(200, user, "avatar update success"));
 });
 
+// aggregation pipeline
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new apiError("No username found", 400);
+  }
+  // we get the arrays
+  const channel = await User.aggregate([
+    {
+      // matching the user
+      $match: {
+        // just a safty major if we dont get the username
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      // finding the count of subscribers
+      $lookup: {
+        from: "subscription",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subs",
+      },
+    },
+    {
+      // to how many we have subscribed to
+      $lookup: {
+        from: "subscription",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      // new fields added in the orignal user object
+      $addFields: {
+        SubscribersCount: {
+          $size: "$subs",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            // $in will see in objects and aswell as arrays
+            if: { $in: [req.user?._id, "$subs.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      //---final projection---
+      // gives the projection that we'll not give all the values thats showing
+      // we'll give selected things only
+      $project: {
+        fullName: 1,
+        username: 1,
+        SubscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+  // we should ones log "channel"
+  // so we can see what aggregate returns
+  // we'll get a array
+
+  if (!channel?.length) {
+    throw new apiError("channel does not exist ! ", 404);
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, channel[0], "User channel fetched success"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -450,4 +533,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
 };
