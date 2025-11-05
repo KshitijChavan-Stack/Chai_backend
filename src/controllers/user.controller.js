@@ -443,12 +443,20 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 });
 
 // aggregation pipeline
+// why Aggregation ->  Performs multiple operations in one query
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   if (!username?.trim()) {
     throw new apiError("No username found", 400);
   }
+  /*
+  Why aggregate? Because we need to:
+  -Join data from the Subscription collection
+  -Calculate counts
+  -Add computed fields
+  -All in ONE efficient database query
+  */
   // we get the arrays
   const channel = await User.aggregate([
     {
@@ -459,8 +467,11 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
     {
+      //$lookup = SQL JOIN - Combines data from different collections
+
       // finding the count of subscribers
       $lookup: {
+        //Finds all subscriptions WHERE channel === this user's _id
         from: "subscription",
         localField: "_id",
         foreignField: "channel",
@@ -470,6 +481,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     {
       // to how many we have subscribed to
       $lookup: {
+        //Finds all subscriptions WHERE subscriber === this user's _id
         from: "subscription",
         localField: "_id",
         foreignField: "subscriber",
@@ -485,9 +497,11 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         channelsSubscribedToCount: {
           $size: "$subscribedTo",
         },
+        //Logic: "Is the current user one of this channel's subscribers?"
         isSubscribed: {
           $cond: {
             // $in will see in objects and aswell as arrays
+            // $in -> checks if the logged-in user's ID exists in that array
             if: { $in: [req.user?._id, "$subs.subscriber"] },
             then: true,
             else: false,
@@ -500,6 +514,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       // gives the projection that we'll not give all the values thats showing
       // we'll give selected things only
       $project: {
+        //Only returns specified fields (like .select() in Mongoose)
         fullName: 1,
         username: 1,
         SubscribersCount: 1,
@@ -514,6 +529,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   // we should ones log "channel"
   // so we can see what aggregate returns
   // we'll get a array
+  //aggregate() ALWAYS returns an array, even if only one document matches!
 
   if (!channel?.length) {
     throw new apiError("channel does not exist ! ", 404);
