@@ -6,6 +6,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 import { Subscription } from "../models/subscription.model.js";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userid) => {
   try {
@@ -523,6 +524,79 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, channel[0], "User channel fetched success"));
 });
 
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+  // here we get a string not a mongodb ID
+  // then further we can use it with findById()/etc
+  // mongoose takes care behind the scene
+  // req.user._id
+
+  // WHAT WE ARE DOIN HERE
+  /*
+  Users -> watchhistroy -> get all Videos docs -> we have owner there -use subpipeline add another lookup ->
+  go back to user and get all values -> bcoz we have so much things we use $project(only send perticualr things)
+  -> we get the array -> we add another pipeline where it adds fields take the first Object
+  */
+  const user = await User.aggregate([
+    {
+      // aggregation pipeline code goes direct ! mongoose doesn't see here
+      $match: {
+        // _id: req.user._id
+        // here se how we need to use the mongoose object
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      // now we have numbers of documents from the video model
+      $lookup: {
+        from: "Video",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            // subPipeline concept
+            $lookup: {
+              from: "User",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  // another sub pipeline for
+                  // the things only to show
+                  // from the doucment we got
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          // the pervious pipeline gives us a array and then we
+          // have to dig into it
+          {
+            $addFields: {
+              // with this we'll overwrite the existing fiield only
+              owner: {
+                // in array we want first element
+                $first: "$owner", // this will give us direct object to the frontend
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, "Watch history found success", user[0].watchHistory)
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -534,4 +608,5 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
+  getUserWatchHistory,
 };
