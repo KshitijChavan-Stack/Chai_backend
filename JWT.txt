@@ -1,0 +1,34 @@
+-> first need to know public/private key cryptography
+- public can be destributed and if the data is encrypted with it, the decryption will be done with our private key only
+- private key concept is important, and JWT work on same
+- another concept we should know is stateless and stateful 
+- we'll not store the state of this in any file or DB
+- JWT is a statless machanism
+- this means who ever have the token are the one who have the access/authority
+- EXAMPLE -eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
+- FIrst part -> The algo thats used
+- Second part -> The info/data -> Payload data
+- / we also add expire time with each token
+- Third part -> signature part(madeup of first and second part + our secret key)
+
+Authentication v/s Authorization
+->Authentication 
+- this is just verifyication
+- when we give our details to authenticate thats this is me ! 
+- This doesn't mean you'll get the resource access
+
+-> Authorization 
+- defined to give resource access
+
+Questions regarding  JWT
+1. how do you securely store JWT on the client-side ?
+- > JWT works like short lived token, who ever it has can access ! there are option where we can store the JWT token 1. storing in local storage(less secure) ,2. Session storage, 3. can also be stored in Cookies(JS cannot access this) but,
+most great way is to expire it in some time period !
+
+2.What are the common usecases of JWT ?
+-> first is for authentication, info exchange we can add the payload,server-server can also comunicate
+
+3.How can you invalidate a JWT?
+-> By every token is created we get a token expire,for every implementaion, we can determine the time span we want it exprire
+
+

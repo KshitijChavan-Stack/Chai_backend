@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { DB_NAME } from "../constants.js";
 
+//DB connection was the part of prerequitise
+
 /*
 1.Database hamesha another continent me hota hai isiliye async await lagan hota hai
 2. database se baat karte samay error aa sakti hai isiliye try catch lagana jarurri hai
